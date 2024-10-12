@@ -11,7 +11,7 @@ locale                   : "en-US"
 title                    : "Yang Xu's Personal Website"
 title_separator          : "-"
 name                     : &name "Yang Xu"
-description              : &description "personal description"
+description              : &description "Ultrafast Nonlinear Optics and Quantum Optics"
 url                      : https://S4vi0R.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "S4vi0R/S4vi0R.github.io"
@@ -43,12 +43,12 @@ author:
   bitbucket        : # Username - Update with your username on the site
   codepen          : # Username
   dribbble         : # Username
-  github           : "academicpages"
+  github           : # Username
   kaggle           : # Username  
   stackoverflow    : # User number or user number and name (i.e., use "1" or "1/jeff-atwood")    
 
   # Social media
-  bluesky          : "bsky.app" # Replace this with you Bluesky username
+  bluesky          : # Username # Replace this with you Bluesky username
   facebook         : # Username
   flickr           : # Username
   foursquare       : # Username
