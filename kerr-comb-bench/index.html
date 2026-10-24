@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Live Lugiato-Lefever simulation of a Kerr microring: tune pump power, laser detuning, Q, coupling, dispersion and thermal drag, and watch Turing rolls, chaos and dissipative Kerr solitons form.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Kerr Comb Bench">
+<meta property="og:description" content="Live Lugiato-Lefever simulation of a Kerr microring: tune pump power, laser detuning, Q, coupling, dispersion and thermal drag, and watch Turing rolls, chaos and dissipative Kerr solitons form.">
+<meta property="og:url" content="https://s4vi0r.github.io/kerr-comb-bench/">
+<meta name="twitter:card" content="summary">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Kerr Comb Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an optics bench. A control rail on the left (laser, device, thermal), live instrument screens on the right (ring, OSA, ESA, scope, operating map). */
+:root {
+  --bg: #edf1f3; --panel: #ffffff; --panel-2: #f5f7f8; --ink: #11181d; --muted: #4f5c65; --faint: #7f8b93; --line: #d8e0e5; --grid: #e8edf0;
+  --accent: #2a78d6; --accent-ink: #1b5aa6; --pump: #eb6834; --trace2: #eb6834;
+  --map0: #ffffff; --map1: #a9cbf1; --map2: #2a78d6; --map3: #0d3466;
+  --r-cw: #74818a; --r-roll: #2a78d6; --r-chaos: #e0612e; --r-breath: #6250d6; --r-sol: #12a06e; --r-multi: #0f7d3c; --r-cryst: #b8467a;
+  --tint-sol: rgba(18,160,110,0.13); --tint-mi: rgba(42,120,214,0.08); --area: rgba(42,120,214,0.22); --focus: #1b5aa6;
+  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1215; --panel: #141b20; --panel-2: #1a2329; --ink: #e6edf1; --muted: #a3b1ba; --faint: #76858f; --line: #26323a; --grid: #1f2a31;
+    --accent: #4b97ee; --accent-ink: #8cbcf5; --pump: #e8743f; --trace2: #e8743f;
+    --map0: #141b20; --map1: #1d4a7e; --map2: #3f8fe9; --map3: #d9ebff;
+    --r-cw: #8e9ba4; --r-roll: #4b97ee; --r-chaos: #ef7a45; --r-breath: #9085e9; --r-sol: #2bc58b; --r-multi: #4fb56e; --r-cryst: #e07aa8;
+    --tint-sol: rgba(43,197,139,0.14); --tint-mi: rgba(75,151,238,0.10); --area: rgba(75,151,238,0.28); --focus: #8cbcf5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1215; --panel: #141b20; --panel-2: #1a2329; --ink: #e6edf1; --muted: #a3b1ba; --faint: #76858f; --line: #26323a; --grid: #1f2a31;
+  --accent: #4b97ee; --accent-ink: #8cbcf5; --pump: #e8743f; --trace2: #e8743f;
+  --map0: #141b20; --map1: #1d4a7e; --map2: #3f8fe9; --map3: #d9ebff;
+  --r-cw: #8e9ba4; --r-roll: #4b97ee; --r-chaos: #ef7a45; --r-breath: #9085e9; --r-sol: #2bc58b; --r-multi: #4fb56e; --r-cryst: #e07aa8;
+  --tint-sol: rgba(43,197,139,0.14); --tint-mi: rgba(75,151,238,0.10); --area: rgba(75,151,238,0.28); --focus: #8cbcf5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 36px; }
+.wrap { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+h1 { font-family: var(--font-label); font-weight: 600; font-size: 26px; letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); max-width: 70ch; margin: 2px 0 0; }
+.eq { font-family: var(--font-data); font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; white-space: nowrap; overflow-x: auto; max-width: 100%; }
+.app { display: grid; grid-template-columns: 312px minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 980px) { .app { grid-template-columns: minmax(0, 1fr); } .screens { order: -1; } }
+
+/* status strip */
+.status { display: grid; grid-template-columns: minmax(250px, 1.6fr) repeat(auto-fit, minmax(118px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.status > div { background: var(--panel); padding: 10px 12px; min-width: 0; }
+.regime { display: flex; flex-direction: column; gap: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font-family: var(--font-label); font-weight: 600; font-size: 15px; padding: 3px 10px 3px 8px; border-radius: 999px; color: var(--ink);
+  background: color-mix(in srgb, var(--chip, var(--r-cw)) 16%, transparent); border: 1px solid color-mix(in srgb, var(--chip, var(--r-cw)) 45%, transparent); }
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--chip, var(--r-cw)); display: inline-block; }
+.regime p { margin: 0; color: var(--muted); font-size: 13px; }
+.metric .k { font-family: var(--font-label); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+.metric .v { font-family: var(--font-data); font-size: 16px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.metric .v .u { display: block; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metric .u { font-size: 11.5px; color: var(--muted); }
+
+/* rail */
+.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+.group h2 { font-family: var(--font-label); font-weight: 600; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ctl { display: flex; flex-direction: column; gap: 3px; }
+.ctl .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ctl label { font-weight: 500; }
+.ctl output { font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--accent-ink); text-align: right; white-space: nowrap; }
+.ctl .hint { font-size: 12px; color: var(--faint); line-height: 1.35; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 2px 0 0; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: 500 13px var(--font-ui); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { filter: brightness(1.08); }
+button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.presets button { font-size: 12.5px; padding: 5px 9px; }
+select { font: 500 13px var(--font-ui); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 6px; }
+.switch { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.switch input { width: 16px; height: 16px; accent-color: var(--accent); }
+.derived { font-family: var(--font-data); font-size: 12px; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-variant-numeric: tabular-nums; }
+.derived span:nth-child(odd) { color: var(--faint); font-family: var(--font-ui); }
+
+/* screens */
+.screens { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; min-width: 0; }
+.screens .wide { grid-column: 1 / -1; }
+@media (max-width: 1240px) { .screens { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 12px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.panel header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.panel h3 { font-family: var(--font-label); font-weight: 600; font-size: 15px; margin: 0; }
+.panel .tag { font-family: var(--font-data); font-size: 11px; letter-spacing: 0.08em; color: var(--faint); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+.panel .cap { font-size: 12.5px; color: var(--muted); margin: 0; }
+canvas { display: block; width: 100%; touch-action: none; }
+.ringgrid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; align-items: start; }
+@media (max-width: 620px) { .ringgrid { grid-template-columns: minmax(0, 1fr); } #ringC { max-width: 260px; margin: 0 auto; } }
+#ringC { aspect-ratio: 1 / 1; height: auto; max-width: 100%; }
+#fieldC { height: 150px; } #stC { height: 170px; } #osaC { height: 230px; } #esaC { height: 230px; } #scopeC { height: 270px; } #mapC { height: 300px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 3px 9px; font-size: 12px; background: transparent; }
+.seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+footer { color: var(--faint); font-size: 12px; max-width: 110ch; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Kerr Comb Bench</h1>
+      <p class="sub">A live Lugiato–Lefever simulation of a microring. Turn the knobs you have in the lab and watch the field inside the ring and the signals your instruments would record.</p>
+    </div>
+    <div class="eq">∂ψ/∂t = −(1+iζ₀)ψ + i d₂∂²ψ/∂θ² + i|ψ|²ψ + f</div>
+  </header>
+
+  <section class="status" aria-live="polite">
+    <div class="regime">
+      <span class="chip" id="chip"><i></i><span id="regName">Starting</span></span>
+      <p id="regDesc">The simulation is starting.</p>
+    </div>
+    <div class="metric"><div class="k">Pump / threshold</div><div class="v" id="mF2">–</div></div>
+    <div class="metric"><div class="k">Laser detuning</div><div class="v" id="mDet">–</div></div>
+    <div class="metric"><div class="k">Effective detuning</div><div class="v" id="mDetEff">–</div></div>
+    <div class="metric"><div class="k">Comb power out</div><div class="v" id="mComb">–</div></div>
+    <div class="metric"><div class="k">Pump transmission</div><div class="v" id="mT">–</div></div>
+    <div class="metric"><div class="k">Intensity noise</div><div class="v" id="mRIN">–</div></div>
+  </section>
+
+  <div class="app">
+    <aside class="rail" aria-label="Controls">
+      <div class="group">
+        <h2>Laser <span class="btns"><button id="pauseBtn" aria-pressed="false" title="Pause or resume the simulation">Pause</button></span></h2>
+        <div class="ctl">
+          <div class="row"><label for="pin">Pump power on chip</label><output id="pinOut"></output></div>
+          <input type="range" id="pin" min="0" max="1000" step="1">
+          <div class="hint">Sets f² = P/P<sub>th</sub>. More pump widens the soliton window but brings breathers.</div>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="det">Detuning set point</label><output id="detOut"></output></div>
+          <input type="range" id="det" min="-6" max="12" step="0.01">
+          <div class="hint">Laser frequency below the cold resonance, f<sub>res</sub> − f<sub>laser</sub>. The laser moves to the set point at the tuning speed.</div>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="rate">Tuning speed</label><output id="rateOut"></output></div>
+          <input type="range" id="rate" min="0" max="1000" step="1">
+          <div class="hint">Real piezo scans are far slower. The comb follows them adiabatically; thermal drag does not.</div>
+        </div>
+        <div class="btns">
+          <button class="primary" id="sweepBtn" title="Restart from the blue side and tune to the set point">Sweep in from blue</button>
+          <button id="holdBtn" title="Stop the laser where it is now">Hold here</button>
+        </div>
+        <div class="ctl">
+          <div class="row"><label for="stepSel">Step the set point</label>
+            <select id="stepSel" aria-label="Step size"><option value="5">5 MHz</option><option value="10">10 MHz</option><option value="25" selected>25 MHz</option><option value="50">50 MHz</option><option value="100">100 MHz</option></select></div>
+          <div class="btns"><button id="stepBlue">◀ Toward blue</button><button id="stepRed">Toward red ▶</button></div>
+          <div class="hint">Stepping toward blue finds the low edge of the soliton range, where the pulses dissolve back into chaos. In real devices, slow backward tuning can also drop solitons one at a time; this simple model does not reproduce that.</div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Start from</h2>
+        <div class="btns presets" id="presets">
+          <button data-p="cw">Below threshold</button>
+          <button data-p="rolls">Primary comb</button>
+          <button data-p="chaos">Chaos</button>
+          <button data-p="single">Single soliton</button>
+          <button data-p="multi">Multi-soliton</button>
+          <button data-p="breather">Breather</button>
+          <button data-p="sweep">Full sweep</button>
+          <button data-p="thermal">Sweep with thermal drag</button>
+        </div>
+        <div class="btns"><button id="kickBtn" title="Add a burst of noise to the field">Noise kick</button><button id="cwBtn" title="Erase all structure and restart from the uniform state">Reset to CW</button></div>
+      </div>
+
+      <div class="group">
+        <h2>Device</h2>
+        <div class="ctl"><div class="row"><label for="kap">Loaded linewidth κ/2π</label><output id="kapOut"></output></div>
+          <input type="range" id="kap" min="0" max="1000" step="1"><div class="hint">Higher Q (narrower line) lowers the threshold as κ².</div></div>
+        <div class="ctl"><div class="row"><label for="eta">Coupling ratio κ<sub>ex</sub>/κ</label><output id="etaOut"></output></div>
+          <input type="range" id="eta" min="0.1" max="0.95" step="0.01"><div class="hint">Overcoupling raises threshold but sends more comb power out.</div></div>
+        <div class="ctl"><div class="row"><label for="d2">Dispersion D₂/2π</label><output id="d2Out"></output></div>
+          <input type="range" id="d2" min="0" max="1000" step="1"><div class="hint">Anomalous. Smaller D₂/κ gives broader combs and more modes.</div></div>
+        <div class="ctl"><div class="row"><label for="d3">Third order D₃/2π</label><output id="d3Out"></output></div>
+          <input type="range" id="d3" min="-30" max="30" step="0.5"><div class="hint">Non-zero D₃ creates a dispersive wave and makes solitons drift.</div></div>
+        <div class="ctl"><div class="row"><label for="fsr">Free spectral range</label><output id="fsrOut"></output></div>
+          <input type="range" id="fsr" min="0" max="1000" step="1"><div class="hint">Sets the round trip, line spacing and threshold (∝ 1/FSR for fixed Q).</div></div>
+        <div class="ctl"><div class="row"><label for="gam">Nonlinear coefficient γ</label><output id="gamOut"></output></div>
+          <input type="range" id="gam" min="0" max="1000" step="1"></div>
+        <div class="ctl"><div class="row"><label for="amxMu">Mode crossing at μ</label><output id="amxMuOut"></output></div>
+          <input type="range" id="amxMu" min="-80" max="80" step="1"></div>
+        <div class="ctl"><div class="row"><label for="amxS">Crossing shift</label><output id="amxSOut"></output></div>
+          <input type="range" id="amxS" min="-300" max="300" step="5"><div class="hint">Shifts one mode, as an avoided crossing does. Watch for spurs and soliton crystals.</div></div>
+        <div class="derived" id="derived"></div>
+      </div>
+
+      <div class="group">
+        <h2>Thermal drag</h2>
+        <label class="switch"><input type="checkbox" id="thOn"> Include heating of the ring</label>
+        <div class="ctl"><div class="row"><label for="thS">Thermal / Kerr shift</label><output id="thSOut"></output></div>
+          <input type="range" id="thS" min="0.5" max="8" step="0.1"><div class="hint">How far heating pulls the resonance per unit intracavity power, relative to the Kerr shift.</div></div>
+        <div class="ctl"><div class="row"><label for="thT">Thermal time constant</label><output id="thTOut"></output></div>
+          <input type="range" id="thT" min="0" max="1000" step="1"><div class="hint">Scaled down from the real µs–ms so the effect shows in seconds.</div></div>
+      </div>
+
+      <div class="group">
+        <h2>Simulation</h2>
+        <div class="ctl"><div class="row"><label for="spd">Speed</label><output id="spdOut"></output></div>
+          <input type="range" id="spd" min="0.1" max="1" step="0.05"></div>
+        <div class="derived" id="simInfo"></div>
+      </div>
+    </aside>
+
+    <main class="screens">
+      <section class="panel wide">
+        <header><h3>Inside the ring</h3><span class="tag">FIELD</span></header>
+        <div class="ringgrid">
+          <canvas id="ringC" aria-label="Intracavity intensity drawn around the ring"></canvas>
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+            <canvas id="fieldC" aria-label="Intracavity power along one round trip"></canvas>
+            <canvas id="stC" aria-label="Intracavity power over time, newest at the bottom"></canvas>
+          </div>
+        </div>
+        <p class="cap">Shown in the frame that moves with the light. Bottom right: the same profile over time, newest at the bottom; stationary states draw vertical lines, chaos draws a tangle.</p>
+      </section>
+
+      <section class="panel">
+        <header><h3>Optical spectrum</h3><span class="tag">OSA</span></header>
+        <canvas id="osaC" aria-label="Out-coupled comb line powers"></canvas>
+        <p class="cap">Out-coupled power per comb line. Pump in orange. Hover for mode, offset and power.</p>
+      </section>
+
+      <section class="panel">
+        <header><h3>Intensity noise</h3><span class="tag">ESA</span></header>
+        <canvas id="esaC" aria-label="Spectrum of the comb power fluctuations"></canvas>
+        <p class="cap">Spectrum of the comb-only photodiode, relative to its mean. Chaos is broad; a breather shows a sharp tone; solitons sit at the floor.</p>
+      </section>
+
+      <section class="panel">
+        <header><h3>Scope</h3>
+          <span class="seg" role="group" aria-label="Scope x axis"><button id="scSweep" aria-pressed="true">vs detuning</button><button id="scLive" aria-pressed="false">vs time</button></span></header>
+        <canvas id="scopeC" aria-label="Transmitted pump and comb power"></canvas>
+        <p class="cap">Top: transmitted pump (dashed: steady-state CW branches without heating). Bottom: comb power after the pump notch. Soliton steps are the flat plateaus at the red end.</p>
+      </section>
+
+      <section class="panel">
+        <header><h3>Operating point</h3><span class="tag">MAP</span></header>
+        <canvas id="mapC" aria-label="Map of pump power against detuning with the operating point"></canvas>
+        <p class="cap">Click to move the set point and pump. Filled dot: effective detuning; ring: the laser (they differ when heating is on).</p>
+      </section>
+    </main>
+  </div>
+  <footer>Model: normalized LLE with second and third-order dispersion, one shifted mode for an avoided crossing, and a first-order thermal shift. Not included: Raman, higher-order modes, back-scattering, photorefraction, χ⁽²⁾ effects. Threshold estimate P<sub>th</sub> ≈ κ²/(8ηγL·FSR²) with group index 2.1; time and thermal scales are normalized for speed. <a href="https://github.com/S4vi0R/S4vi0R.github.io/tree/master/kerr-comb-bench" style="color: var(--accent-ink)">Source on GitHub</a>.</footer>
+</div>
+
+<script>
+"use strict";
+// ======================= LLE engine =======================
+class LLE {
+  constructor(N) { this.p = { f2: 6, zetaLaser: -5, d2: 0.01, d3: 0, amxMu: 0, amxShift: 0, thermal: false, thS: 3, thTau: 100 }; this.thetaT = 0; this.t = 0; this.stepCount = 0; this.rngState = 2463534242; this.lastPeak = 4; this.alloc(N); }
+  alloc(N) {
+    this.N = N; this.re = new Float64Array(N); this.im = new Float64Array(N); this.Dre = new Float64Array(N); this.Dim = new Float64Array(N);
+    this.mu = new Int32Array(N); for (let j = 0; j < N; j++) this.mu[j] = j < N / 2 ? j : j - N;
+    this.rev = new Uint32Array(N); const bits = Math.round(Math.log2(N));
+    for (let i = 0; i < N; i++) { let r = 0, x = i; for (let b = 0; b < bits; b++) { r = (r << 1) | (x & 1); x >>= 1; } this.rev[i] = r; }
+    this.cosT = new Float64Array(N / 2); this.sinT = new Float64Array(N / 2);
+    for (let i = 0; i < N / 2; i++) { this.cosT[i] = Math.cos(2 * Math.PI * i / N); this.sinT[i] = Math.sin(2 * Math.PI * i / N); }
+    this.dirty = true;
+  }
+  resize(Nn) { // keep the field's modes
+    const No = this.N; if (Nn === No) return; const tr = Float64Array.from(this.re), ti = Float64Array.from(this.im); this.fft(tr, ti, false);
+    const oldMu = this.mu; this.alloc(Nn); const s = Nn / No; this.re.fill(0); this.im.fill(0);
+    for (let j = 0; j < No; j++) { const m = oldMu[j]; if (m >= -Nn / 2 && m < Nn / 2) { const k = m >= 0 ? m : m + Nn; this.re[k] = tr[j] * s; this.im[k] = ti[j] * s; } }
+    this.fft(this.re, this.im, true);
+  }
+  rand() { let x = this.rngState; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rngState = x >>> 0; return this.rngState / 4294967296 - 0.5; }
+  fft(re, im, inv) {
+    const N = this.N, rev = this.rev, cs = this.cosT, sn = this.sinT, sg = inv ? 1 : -1;
+    for (let i = 0; i < N; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let size = 2; size <= N; size <<= 1) { const half = size >> 1, step = N / size;
+      for (let i = 0; i < N; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+        const wr = cs[k], wi = sg * sn[k], a = i + j, b = a + half;
+        const xr = re[b] * wr - im[b] * wi, xi = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi; } }
+    if (inv) { const s = 1 / N; for (let i = 0; i < N; i++) { re[i] *= s; im[i] *= s; } }
+  }
+  set(params) { Object.assign(this.p, params); this.dirty = true; }
+  zetaEff() { return this.p.zetaLaser - (this.p.thermal ? this.thetaT : 0); }
+  prepare() {
+    const p = this.p, N = this.N; let wmax = 0;
+    for (let j = 0; j < N; j++) { const m = this.mu[j], w = Math.abs(p.d2 * m * m + p.d3 * m * m * m); if (w > wmax) wmax = w; }
+    const peak = Math.max(4, this.lastPeak, 2 * Math.abs(this.zetaEff()) + 4);
+    this.dt = Math.min(0.005, 2.4 / Math.max(wmax, 1), 0.25 / peak);
+    for (let j = 0; j < N; j++) { const m = this.mu[j]; let w = p.d2 * m * m + p.d3 * m * m * m;
+      if (p.amxShift !== 0 && m === p.amxMu && m !== 0) w += p.amxShift;
+      this.Dre[j] = Math.cos(-w * this.dt); this.Dim[j] = Math.sin(-w * this.dt); }
+    this.dirty = false;
+  }
+  cwRoots(zeta) {
+    const f2 = this.p.f2, a = -2 * zeta, b = zeta * zeta + 1, c = -f2;
+    const Q = (a * a - 3 * b) / 9, R = (2 * a * a * a - 9 * a * b + 27 * c) / 54;
+    if (R * R < Q * Q * Q) { const th = Math.acos(R / Math.sqrt(Q * Q * Q)), sq = -2 * Math.sqrt(Q);
+      return [sq * Math.cos(th / 3) - a / 3, sq * Math.cos((th + 2 * Math.PI) / 3) - a / 3, sq * Math.cos((th - 2 * Math.PI) / 3) - a / 3].sort((x, y) => x - y); }
+    const A = -Math.sign(R) * Math.cbrt(Math.abs(R) + Math.sqrt(R * R - Q * Q * Q)), B = A === 0 ? 0 : Q / A;
+    return [A + B - a / 3];
+  }
+  cwField(zeta, branch) {
+    const r = this.cwRoots(zeta), rho = branch === 'upper' ? r[r.length - 1] : r[0];
+    const f = Math.sqrt(this.p.f2), d = 1 + (zeta - rho) * (zeta - rho);
+    return { re: f / d, im: -f * (zeta - rho) / d, rho };
+  }
+  resetCW(branch, noise) {
+    const s = this.cwField(this.zetaEff(), branch || 'lower'), a = noise === undefined ? 1e-4 : noise;
+    for (let j = 0; j < this.N; j++) { this.re[j] = s.re + a * this.rand(); this.im[j] = s.im + a * this.rand(); }
+    this.lastPeak = Math.max(4, s.rho); this.dirty = true;
+  }
+  injectSolitons(pos) {
+    const p = this.p, z = this.zetaEff(), N = this.N, f = Math.sqrt(p.f2), L = 2 * Math.PI / Math.sqrt(p.d2), bg = this.cwField(z, 'lower');
+    const zz = Math.max(z, 0.5), A = Math.sqrt(2 * zz), w = Math.sqrt(zz), phi = Math.acos(Math.min(1, Math.sqrt(8 * zz) / (Math.PI * f)));
+    for (let j = 0; j < N; j++) { this.re[j] = bg.re; this.im[j] = bg.im; }
+    for (const x0 of pos) for (let j = 0; j < N; j++) { let dx = j / N - x0; dx -= Math.round(dx); const s = A / Math.cosh(w * dx * L);
+      this.re[j] += s * Math.cos(phi); this.im[j] += s * Math.sin(phi); }
+    this.lastPeak = 2 * zz + 4; this.dirty = true;
+  }
+  kick(a) { for (let j = 0; j < this.N; j++) { this.re[j] += a * this.rand(); this.im[j] += a * this.rand(); } }
+  step(n) {
+    if (this.dirty) this.prepare();
+    const N = this.N, re = this.re, im = this.im, Dre = this.Dre, Dim = this.Dim, p = this.p, f = Math.sqrt(p.f2), dt = this.dt;
+    let pint = 0, peak = 0;
+    for (let s = 0; s < n; s++) {
+      const z = this.zetaEff();
+      this.fft(re, im, false);
+      const ex = Math.exp(-dt), Sre = ex * Math.cos(-z * dt), Sim = ex * Math.sin(-z * dt);
+      for (let j = 0; j < N; j++) { const xr = re[j] * Dre[j] - im[j] * Dim[j], xi = re[j] * Dim[j] + im[j] * Dre[j];
+        re[j] = xr * Sre - xi * Sim; im[j] = xr * Sim + xi * Sre; }
+      const oR = 1 - Sre, oI = -Sim, den = 1 + z * z;
+      re[0] += N * f * (oR + oI * z) / den; im[0] += N * f * (oI - oR * z) / den;
+      this.fft(re, im, true);
+      pint = 0; peak = 0;
+      for (let j = 0; j < N; j++) { const I = re[j] * re[j] + im[j] * im[j]; pint += I; if (I > peak) peak = I;
+        const ph = I * dt, c = Math.cos(ph), sn = Math.sin(ph), xr = re[j]; re[j] = xr * c - im[j] * sn; im[j] = xr * sn + im[j] * c; }
+      pint /= N;
+      if (p.thermal) this.thetaT += dt * (p.thS * pint - this.thetaT) / p.thTau;
+      this.stepCount++;
+      if ((this.stepCount & 63) === 0) { const a = 2e-6; for (let j = 0; j < N; j++) { re[j] += a * this.rand(); im[j] += a * this.rand(); } }
+      this.t += dt;
+    }
+    if (peak > 1.3 * this.lastPeak || peak < 0.5 * this.lastPeak) { this.lastPeak = peak; this.dirty = true; }
+  }
+  intensity(out) { for (let j = 0; j < this.N; j++) out[j] = this.re[j] * this.re[j] + this.im[j] * this.im[j]; return out; }
+  spectrum(out) { const N = this.N, tr = Float64Array.from(this.re), ti = Float64Array.from(this.im); this.fft(tr, ti, false);
+    for (let j = 0; j < N; j++) { const k = (j + N / 2) % N; out[j] = (tr[k] * tr[k] + ti[k] * ti[k]) / (N * N); } return out; }
+  observables(eta) {
+    const N = this.N; let sr = 0, si = 0, tot = 0, peak = 0;
+    for (let j = 0; j < N; j++) { sr += this.re[j]; si += this.im[j]; const I = this.re[j] * this.re[j] + this.im[j] * this.im[j]; tot += I; if (I > peak) peak = I; }
+    sr /= N; si /= N; tot /= N; const f = Math.sqrt(this.p.f2), tR = 1 - 2 * eta * sr / f, tI = -2 * eta * si / f;
+    return { T: tR * tR + tI * tI, combNorm: Math.max(0, tot - (sr * sr + si * si)), pint: tot, peak };
+  }
+}
+function fftSmall(re, im) { // in-place radix-2 forward FFT for the ESA
+  const N = re.length; for (let i = 1, j = 0; i < N; i++) { let bit = N >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let len = 2; len <= N; len <<= 1) { const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < N; i += len) { let cr = 1, ci = 0; for (let j = 0; j < len / 2; j++) { const a = i + j, b = a + len / 2, xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+      re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi; const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t; } } }
+}
+class Ring { constructor(n) { this.a = new Float64Array(n); this.n = n; this.i = 0; this.c = 0; }
+  push(v) { this.a[this.i] = v; this.i = (this.i + 1) % this.n; if (this.c < this.n) this.c++; }
+  last(k) { k = Math.min(k, this.c); const o = new Float64Array(k); for (let q = 0; q < k; q++) o[q] = this.a[(this.i - k + q + this.n) % this.n]; return o; }
+  clear() { this.i = 0; this.c = 0; } }
+
+// ======================= state =======================
+const C0 = 299792458, NG = 2.1;
+const dev = { fsr: 100, kappa: 100, eta: 0.6, d2: 1000, d3: 0, gamma: 1.0, amxMu: 12, amxMHz: 0 };
+const op = { pin: 35, setZeta: 5.6, zetaLaser: -5, rate: 0.01, thermal: false, thS: 3, thTau: 100 };
+const run = { paused: false, speed: 0.8, settleUntil: 0, moving: false, tracing: false, scope: 'sweep', lastChange: 0 };
+const sim = new LLE(512);
+let D = null;
+const tl = { T: new Ring(4096), comb: new Ring(4096), pint: new Ring(4096), peak: new Ring(4096), t: new Ring(4096) };
+let trace = [];
+let rowCount = 0;
+const ZSTART = -3;
+
+function derived() {
+  const kr = 2 * Math.PI * dev.kappa * 1e6, FSR = dev.fsr * 1e9, L = C0 / (NG * FSR);
+  const Pth = kr * kr / (8 * dev.eta * dev.gamma * L * FSR * FSR) * 1e3;
+  const f2 = op.pin / Pth, d2 = dev.d2 * 1e3 / (dev.kappa * 1e6), d3 = dev.d3 * 1e3 / (3 * dev.kappa * 1e6);
+  return { Pth, f2, d2, d3, zlim: Math.PI * Math.PI * f2 / 8, halfK: dev.kappa / 2, tUnit: 1 / (Math.PI * dev.kappa), TR: 1e3 / dev.fsr };
+}
+function neededN(Dd) {
+  const zm = Math.max(6, Dd.zlim, Math.abs(op.setZeta), Math.abs(op.zetaLaser)), mu = 6 * Math.sqrt(zm / Dd.d2), muMI = Math.sqrt(Math.max(3, 2.2 * Math.sqrt(Dd.f2) + 2) / Dd.d2);
+  let N = 256; while (N < 2 * Math.max(mu, 1.6 * muMI) && N < 1024) N *= 2; run.resLimited = 2 * Math.max(mu, 1.6 * muMI) > 1024; return N;
+}
+function applyParams() {
+  D = derived(); const N = neededN(D); if (N !== sim.N) sim.resize(N);
+  sim.set({ f2: D.f2, d2: D.d2, d3: D.d3, amxMu: dev.amxMu, amxShift: 2 * dev.amxMHz / dev.kappa, thermal: op.thermal, thS: op.thS, thTau: op.thTau, zetaLaser: op.zetaLaser });
+  run.lastChange = sim.t; refreshLabels();
+}
+
+// ======================= controls =======================
+const $ = id => document.getElementById(id);
+const logMap = (t, lo, hi) => Math.pow(10, Math.log10(lo) + t / 1000 * (Math.log10(hi) - Math.log10(lo)));
+const logInv = (v, lo, hi) => Math.round(1000 * (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)));
+const R = { pin: [0.3, 3000], kap: [5, 1000], d2: [20, 20000], fsr: [10, 1000], gam: [0.1, 10], rate: [0.001, 0.06], thT: [20, 3000] };
+const fmtP = mw => mw >= 1000 ? (mw / 1000).toFixed(2) + ' W' : mw >= 10 ? mw.toFixed(0) + ' mW' : mw.toFixed(1) + ' mW';
+const fmtMHz = v => (Math.abs(v) >= 1000 ? (v / 1000).toFixed(2) + ' GHz' : v.toFixed(0) + ' MHz');
+const sgn = v => (v >= 0 ? '+' : '−') + '';
+function detLabel(z) { const mhz = z * D.halfK; return (mhz >= 0 ? '+' : '−') + fmtMHz(Math.abs(mhz)); }
+
+function syncInputs() {
+  $('pin').value = logInv(op.pin, ...R.pin); $('det').value = op.setZeta; $('rate').value = logInv(op.rate, ...R.rate);
+  $('kap').value = logInv(dev.kappa, ...R.kap); $('eta').value = dev.eta; $('d2').value = logInv(dev.d2, ...R.d2); $('d3').value = dev.d3;
+  $('fsr').value = logInv(dev.fsr, ...R.fsr); $('gam').value = logInv(dev.gamma, ...R.gam); $('amxMu').value = dev.amxMu; $('amxS').value = dev.amxMHz;
+  $('thOn').checked = op.thermal; $('thS').value = op.thS; $('thT').value = logInv(op.thTau, ...R.thT); $('spd').value = run.speed;
+}
+function detRange() {
+  const hi = Math.max(12, 1.3 * D.zlim + 2 + (op.thermal ? op.thS * Math.max(2, D.f2 * 0.6) : 0));
+  const el = $('det'); el.min = -6; el.max = hi.toFixed(2); if (op.setZeta > hi) op.setZeta = hi; el.value = op.setZeta;
+}
+function refreshLabels() {
+  detRange();
+  $('pinOut').textContent = fmtP(op.pin) + ' · f² ' + D.f2.toFixed(1);
+  $('detOut').textContent = detLabel(op.setZeta) + ' · ζ₀ ' + op.setZeta.toFixed(2);
+  const mhzus = op.rate * Math.PI * dev.kappa * dev.kappa / 2; $('rateOut').textContent = (mhzus >= 100 ? mhzus.toFixed(0) : mhzus.toFixed(1)) + ' MHz/µs';
+  $('kapOut').textContent = dev.kappa.toFixed(dev.kappa < 20 ? 1 : 0) + ' MHz · Q ' + (193.4 / dev.kappa).toFixed(2) + 'M';
+  $('etaOut').textContent = dev.eta.toFixed(2) + (dev.eta > 0.52 ? ' over' : dev.eta < 0.48 ? ' under' : ' critical');
+  $('d2Out').textContent = dev.d2 >= 1000 ? (dev.d2 / 1000).toFixed(2) + ' MHz' : dev.d2.toFixed(0) + ' kHz';
+  $('d3Out').textContent = dev.d3.toFixed(1) + ' kHz';
+  $('fsrOut').textContent = dev.fsr.toFixed(dev.fsr < 100 ? 1 : 0) + ' GHz';
+  $('gamOut').textContent = dev.gamma.toFixed(2) + ' /W/m';
+  $('amxMuOut').textContent = 'μ = ' + dev.amxMu;
+  $('amxSOut').textContent = (dev.amxMHz === 0 ? 'off' : (dev.amxMHz > 0 ? '+' : '') + dev.amxMHz + ' MHz');
+  $('thSOut').textContent = op.thS.toFixed(1) + '×';
+  $('thTOut').textContent = (op.thTau * D.tUnit * 1000).toFixed(0) + ' ns';
+  $('spdOut').textContent = Math.round(run.speed * 100) + '%';
+  const muMI = Math.sqrt(1 / D.d2), bw = 1.12 * Math.sqrt(Math.max(D.zlim, 0) / D.d2);
+  const dw = dev.d3 !== 0 ? Math.round(-3 * dev.d2 / dev.d3) : null;
+  $('derived').innerHTML = `<span>Threshold P<sub>th</sub></span><b>${fmtP(D.Pth)}</b><span>Solitons up to</span><b>${fmtMHz(D.zlim * D.halfK)} red</b>` +
+    `<span>First sidebands</span><b>μ ≈ ${muMI.toFixed(0)} (${(muMI * dev.fsr / 1000).toFixed(2)} THz)</b><span>Max soliton width</span><b>${bw.toFixed(0)} modes (3 dB)</b>` +
+    `<span>Dispersive wave</span><b>${dw === null ? 'none (D₃ = 0)' : 'μ ≈ ' + dw}</b><span>Round trip</span><b>${D.TR.toFixed(2)} ps</b>`;
+  $('simInfo').innerHTML = `<span>Modes simulated</span><b>${sim.N}</b><span>Time step</span><b>${(sim.dt || 0).toFixed(4)} × 2/κ</b>`;
+}
+function bindRange(id, fn) { $(id).addEventListener('input', e => { fn(+e.target.value); applyParams(); }); }
+bindRange('pin', v => { op.pin = logMap(v, ...R.pin); });
+bindRange('det', v => { op.setZeta = v; });
+bindRange('rate', v => { op.rate = logMap(v, ...R.rate); });
+bindRange('kap', v => { dev.kappa = logMap(v, ...R.kap); });
+bindRange('eta', v => { dev.eta = v; });
+bindRange('d2', v => { dev.d2 = logMap(v, ...R.d2); });
+bindRange('d3', v => { dev.d3 = v; });
+bindRange('fsr', v => { dev.fsr = logMap(v, ...R.fsr); });
+bindRange('gam', v => { dev.gamma = logMap(v, ...R.gam); });
+bindRange('amxMu', v => { dev.amxMu = v; });
+bindRange('amxS', v => { dev.amxMHz = v; });
+bindRange('thS', v => { op.thS = v; });
+bindRange('thT', v => { op.thTau = logMap(v, ...R.thT); });
+bindRange('spd', v => { run.speed = v; });
+$('thOn').addEventListener('change', e => { op.thermal = e.target.checked; if (op.thermal) sim.thetaT = op.thS * sim.observables(dev.eta).pint; else sim.thetaT = 0; applyParams(); });
+$('pauseBtn').addEventListener('click', () => { run.paused = !run.paused; $('pauseBtn').textContent = run.paused ? 'Resume' : 'Pause'; $('pauseBtn').setAttribute('aria-pressed', run.paused); });
+$('holdBtn').addEventListener('click', () => { op.setZeta = op.zetaLaser; applyParams(); syncInputs(); });
+$('stepBlue').addEventListener('click', () => { op.setZeta -= +$('stepSel').value / D.halfK; applyParams(); syncInputs(); });
+$('stepRed').addEventListener('click', () => { op.setZeta += +$('stepSel').value / D.halfK; applyParams(); syncInputs(); });
+$('sweepBtn').addEventListener('click', () => startSweep());
+$('kickBtn').addEventListener('click', () => { sim.kick(0.3); markSettle(); });
+$('cwBtn').addEventListener('click', () => { sim.resetCW('lower', 1e-4); markSettle(); });
+function setScope(m) { run.scope = m; $('scSweep').setAttribute('aria-pressed', m === 'sweep'); $('scLive').setAttribute('aria-pressed', m === 'live'); }
+$('scSweep').addEventListener('click', () => setScope('sweep')); $('scLive').addEventListener('click', () => setScope('live'));
+function markSettle() { run.settleUntil = sim.t + 15; }
+function clearHistory() { for (const k in tl) tl[k].clear(); rowCount = 0; stClear = true; }
+
+function startSweep() {
+  op.zetaLaser = ZSTART; applyParams(); sim.p.zetaLaser = ZSTART;
+  sim.thetaT = 0; sim.resetCW('lower', 1e-4); if (op.thermal) sim.thetaT = op.thS * sim.cwField(ZSTART, 'lower').rho;
+  trace = []; run.tracing = true; setScope('sweep'); clearHistory(); markSettle();
+}
+function setOperating(f2, z) { op.pin = f2 * derived().Pth; op.setZeta = z; op.zetaLaser = z; applyParams(); sim.p.zetaLaser = z; sim.thetaT = 0; }
+function preset(name) {
+  op.thermal = (name === 'thermal'); if (name !== 'thermal') op.rate = Math.max(op.rate, 0.006);
+  switch (name) {
+    case 'cw': setOperating(0.8, 0); sim.resetCW('upper', 1e-4); break;
+    case 'rolls': setOperating(4, 0); sim.resetCW('upper', 1e-3); break;
+    case 'chaos': setOperating(6, 2.5); sim.resetCW('upper', 1e-3); break;
+    case 'single': setOperating(6, 5); sim.injectSolitons([0.5]); break;
+    case 'multi': setOperating(6, 5); sim.injectSolitons([0.08, 0.27, 0.55, 0.7]); break;
+    case 'breather': setOperating(8, 4); sim.injectSolitons([0.5]); break;
+    case 'sweep': op.pin = 6 * derived().Pth; op.setZeta = 5.6; op.rate = 0.015; startSweep(); break;
+    case 'thermal': op.pin = 6 * derived().Pth; op.thS = 3; op.thTau = 60; op.rate = 0.007; op.setZeta = 12; applyParams(); startSweep(); break;
+  }
+  if (name !== 'sweep' && name !== 'thermal') { trace = []; run.tracing = false; setScope('live'); clearHistory(); }
+  markSettle(); applyParams(); syncInputs();
+}
+document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => preset(b.dataset.p)));
+
+// ======================= simulation loop =======================
+let I = new Float64Array(1024), SP = new Float64Array(1024), last = null, esa = null, frameNo = 0;
+function simulate() {
+  if (sim.dirty) sim.prepare();
+  const t0 = performance.now(), budget = 2 + 11 * run.speed;
+  while (performance.now() - t0 < budget) {
+    const m = Math.max(1, Math.round(0.25 / sim.dt));
+    const diff = op.setZeta - op.zetaLaser, dz = op.rate * m * sim.dt;
+    if (Math.abs(diff) > 1e-9) { op.zetaLaser += Math.sign(diff) * Math.min(Math.abs(diff), dz); sim.p.zetaLaser = op.zetaLaser; run.moving = true; }
+    else { run.moving = false; if (run.tracing && trace.length) run.tracing = false; }
+    sim.step(m);
+    const o = sim.observables(dev.eta), comb = 4 * dev.eta * dev.eta * D.Pth * o.combNorm;
+    tl.T.push(o.T); tl.comb.push(comb); tl.pint.push(o.pint); tl.peak.push(o.peak); tl.t.push(sim.t);
+    if (run.moving || run.tracing) { trace.push([op.zetaLaser, o.T, comb]); if (trace.length > 8000) trace.splice(0, trace.length - 8000); }
+    if (++rowCount % 2 === 0) pushRow();
+    last = o;
+  }
+}
+
+// ======================= colours =======================
+let CL = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  CL = { ink: g('--ink'), muted: g('--muted'), faint: g('--faint'), line: g('--line'), grid: g('--grid'), panel: g('--panel'), accent: g('--accent'), pump: g('--pump'),
+    tintSol: g('--tint-sol'), tintMi: g('--tint-mi'), area: g('--area'), r: { cw: g('--r-cw'), roll: g('--r-roll'), chaos: g('--r-chaos'), breath: g('--r-breath'), sol: g('--r-sol'), multi: g('--r-multi'), cryst: g('--r-cryst') },
+    data: getComputedStyle(document.body).getPropertyValue('--font-data').trim() || 'monospace', ui: g('--font-ui') || 'sans-serif' };
+  const stops = ['--map0', '--map1', '--map2', '--map3'].map(n => hexToRgb(g(n)));
+  LUT = new Uint8ClampedArray(256 * 3); LUTs = [];
+  for (let i = 0; i < 256; i++) { const x = i / 255 * 3, k = Math.min(2, Math.floor(x)), u = x - k;
+    for (let c = 0; c < 3; c++) LUT[i * 3 + c] = stops[k][c] + (stops[k + 1][c] - stops[k][c]) * u;
+    LUTs.push(`rgb(${LUT[i * 3]},${LUT[i * 3 + 1]},${LUT[i * 3 + 2]})`); }
+  stClear = true;
+}
+let LUT, LUTs;
+function hexToRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// ======================= canvas helpers =======================
+const hover = {};
+function canvasCtx(c) {
+  const r = c.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(10, Math.round(r.width * dpr)), h = Math.max(10, Math.round(r.height * dpr));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, r.width, r.height); return { ctx, w: r.width, h: r.height };
+}
+['ringC', 'fieldC', 'stC', 'osaC', 'esaC', 'scopeC', 'mapC'].forEach(id => {
+  const c = $(id); hover[id] = null;
+  c.addEventListener('pointermove', e => { const r = c.getBoundingClientRect(); hover[id] = { x: e.clientX - r.left, y: e.clientY - r.top }; });
+  c.addEventListener('pointerleave', () => { hover[id] = null; });
+});
+function niceTicks(lo, hi, n) {
+  const span = hi - lo; if (!(span > 0)) return [lo]; const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag; const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9 * span; v += step) out.push(+v.toFixed(10)); return out;
+}
+function frame2(ctx, box, xr, yr, o) { // axes, grid, tick labels
+  const { x, y, w, h } = box; ctx.font = `11px ${CL.data}`; ctx.lineWidth = 1;
+  const X = v => x + (v - xr[0]) / (xr[1] - xr[0]) * w, Y = v => y + h - (v - yr[0]) / (yr[1] - yr[0]) * h;
+  ctx.strokeStyle = CL.grid; ctx.fillStyle = CL.faint;
+  if (!o.noYTicks) { ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const t of niceTicks(yr[0], yr[1], o.ny || 4)) { const yy = Math.round(Y(t)) + 0.5; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + w, yy); ctx.stroke(); ctx.fillText(o.fy ? o.fy(t) : String(t), x - 5, yy); } }
+  if (!o.noXTicks) { ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const t of niceTicks(xr[0], xr[1], o.nx || 6)) { const xx = Math.round(X(t)) + 0.5; ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx, y + h); ctx.stroke(); ctx.fillText(o.fx ? o.fx(t) : String(t), xx, y + h + 4); } }
+  ctx.strokeStyle = CL.line; ctx.strokeRect(x + 0.5, y + 0.5, w, h);
+  ctx.fillStyle = CL.muted; ctx.font = `11.5px ${CL.ui}`;
+  if (o.xl) { ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(o.xl, x + w, box.y + h + 32); }
+  if (o.yl) { ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(o.yl, x, y - 4); }
+  return { X, Y };
+}
+function tip(ctx, x, y, lines, W, H) {
+  ctx.font = `11.5px ${CL.data}`; const w = Math.max(...lines.map(s => ctx.measureText(s).width)) + 14, h = lines.length * 15 + 8;
+  let tx = x + 12, ty = y - h - 8; if (tx + w > W - 4) tx = x - w - 12; if (ty < 2) ty = y + 12; if (ty + h > H - 2) ty = H - h - 2;
+  ctx.fillStyle = CL.panel; ctx.strokeStyle = CL.line; ctx.beginPath(); ctx.rect(tx, ty, w, h); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = CL.ink; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; lines.forEach((s, i) => ctx.fillText(s, tx + 7, ty + 5 + i * 15));
+}
+function crossV(ctx, x, box) { ctx.strokeStyle = CL.faint; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(x + 0.5, box.y); ctx.lineTo(x + 0.5, box.y + box.h); ctx.stroke(); ctx.setLineDash([]); }
+
+// ======================= drawing =======================
+let yField = 4, stScale = 4, stClear = true;
+const stOff = document.createElement('canvas'); stOff.width = 256; stOff.height = 220; const stCtx = stOff.getContext('2d');
+function pushRow() {
+  const N = sim.N; sim.intensity(I); const W = stOff.width, H = stOff.height;
+  if (stClear) { stCtx.fillStyle = `rgb(${LUT[0]},${LUT[1]},${LUT[2]})`; stCtx.fillRect(0, 0, W, H); stClear = false; }
+  let mx = 0; for (let j = 0; j < N; j++) if (I[j] > mx) mx = I[j];
+  stScale = Math.max(mx, stScale * 0.995, 1);
+  stCtx.drawImage(stOff, 0, -1);
+  const img = stCtx.createImageData(W, 1), per = N / W;
+  for (let x = 0; x < W; x++) { let v = 0; for (let q = 0; q < per; q++) v = Math.max(v, I[Math.floor(x * per) + q]);
+    const k = Math.max(0, Math.min(255, Math.round(255 * Math.pow(v / stScale, 0.6)))) * 3;
+    img.data[x * 4] = LUT[k]; img.data[x * 4 + 1] = LUT[k + 1]; img.data[x * 4 + 2] = LUT[k + 2]; img.data[x * 4 + 3] = 255; }
+  stCtx.putImageData(img, 0, H - 1);
+}
+function drawRing() {
+  const { ctx, w, h } = canvasCtx($('ringC')), N = sim.N; sim.intensity(I);
+  const cx = w / 2, cy = h * 0.44, Rr = Math.min(w, h) * 0.28, A = Math.min(w, h) * 0.13;
+  let mx = 0; for (let j = 0; j < N; j++) mx = Math.max(mx, I[j]); const sc = Math.max(yField, mx, 1);
+  const by = cy + Rr + 34; ctx.strokeStyle = CL.line; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(8, by); ctx.lineTo(w - 8, by); ctx.stroke();
+  ctx.fillStyle = CL.faint; ctx.font = `11px ${CL.ui}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillText('pump in →', 8, by + 7); ctx.textAlign = 'right'; ctx.fillText('→ to detectors', w - 8, by + 7);
+  ctx.strokeStyle = CL.line; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx, cy, Rr, 0, 2 * Math.PI); ctx.stroke();
+  const M = 360; ctx.beginPath();
+  for (let k = 0; k <= M; k++) { let v = 0; const j0 = Math.floor((k % M) * N / M), j1 = Math.max(j0 + 1, Math.floor(((k % M) + 1) * N / M)); for (let j = j0; j < j1; j++) v = Math.max(v, I[j % N]);
+    const r = Rr + 3 + A * Math.pow(Math.min(1, v / sc), 0.7), a = Math.PI / 2 + 2 * Math.PI * k / M; const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.closePath(); ctx.moveTo(cx + Rr + 3, cy); ctx.arc(cx, cy, Rr + 3, 0, 2 * Math.PI, true);
+  ctx.fillStyle = CL.area; ctx.fill('evenodd');
+  ctx.beginPath(); for (let k = 0; k <= M; k++) { let v = 0; const j0 = Math.floor((k % M) * N / M), j1 = Math.max(j0 + 1, Math.floor(((k % M) + 1) * N / M)); for (let j = j0; j < j1; j++) v = Math.max(v, I[j % N]);
+    const r = Rr + 3 + A * Math.pow(Math.min(1, v / sc), 0.7), a = Math.PI / 2 + 2 * Math.PI * k / M; const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.strokeStyle = CL.accent; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = CL.ink; ctx.font = `600 14px ${CL.ui}`; ctx.fillText(regime.short || '', cx, cy - 8);
+  ctx.fillStyle = CL.muted; ctx.font = `11px ${CL.data}`; ctx.fillText('peak ' + mx.toFixed(1) + '× thr', cx, cy + 11);
+}
+function drawField() {
+  const { ctx, w, h } = canvasCtx($('fieldC')), N = sim.N; sim.intensity(I);
+  let mx = 0; for (let j = 0; j < N; j++) mx = Math.max(mx, I[j]); yField = Math.max(mx * 1.12, yField * 0.985, 1.5);
+  const box = { x: 46, y: 18, w: w - 56, h: h - 52 }, TR = D.TR;
+  const { X, Y } = frame2(ctx, box, [0, TR], [0, yField], { nx: 6, ny: 3, fx: t => t.toFixed(TR < 5 ? 1 : 0), yl: 'intracavity power (× threshold)', xl: 'position along the round trip (ps)' });
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); for (let j = 0; j < N; j++) ctx.lineTo(X(j / N * TR), Y(I[j])); ctx.lineTo(X(TR), Y(0)); ctx.closePath();
+  ctx.fillStyle = CL.tintMi; ctx.fill();
+  ctx.beginPath(); for (let j = 0; j < N; j++) { const xx = X(j / N * TR), yy = Y(I[j]); j ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.strokeStyle = CL.accent; ctx.lineWidth = 1.6; ctx.stroke();
+  const hv = hover.fieldC; if (hv && hv.x > box.x && hv.x < box.x + box.w) { const j = Math.min(N - 1, Math.max(0, Math.round((hv.x - box.x) / box.w * N))); crossV(ctx, hv.x, box);
+    tip(ctx, hv.x, hv.y, [(j / N * TR).toFixed(3) + ' ps', I[j].toFixed(2) + ' × thr'], w, h); }
+}
+function drawST() {
+  const { ctx, w, h } = canvasCtx($('stC')); const box = { x: 46, y: 4, w: w - 56, h: h - 24 };
+  ctx.imageSmoothingEnabled = true; ctx.drawImage(stOff, box.x, box.y, box.w, box.h);
+  ctx.strokeStyle = CL.line; ctx.strokeRect(box.x + 0.5, box.y + 0.5, box.w, box.h);
+  const rowNs = 2 * Math.max(1, Math.round(0.25 / sim.dt)) * sim.dt * D.tUnit * 1000, span = rowNs * stOff.height;
+  ctx.fillStyle = CL.faint; ctx.font = `11px ${CL.data}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('now', box.x - 5, box.y + box.h - 4); ctx.fillText('−' + (span >= 1000 ? (span / 1000).toFixed(1) + 'µs' : span.toFixed(0) + 'ns'), box.x - 5, box.y + 6);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = CL.muted; ctx.font = `11.5px ${CL.ui}`; ctx.fillText('history of the profile above', box.x, box.y + box.h + 5);
+}
+function drawOSA() {
+  const { ctx, w, h } = canvasCtx($('osaC')), N = sim.N; sim.spectrum(SP);
+  const k4 = 4 * dev.eta * dev.eta * D.Pth, pumpOut = op.pin * (last ? last.T : 1);
+  let ext = 20; for (let j = 0; j < N; j++) { const m = j - N / 2; if (m !== 0 && 10 * Math.log10(k4 * SP[j] + 1e-30) > -75) ext = Math.max(ext, Math.abs(m)); }
+  osaSpan = Math.max(osaSpan * 0.995, Math.min(N / 2, Math.ceil(ext * 1.15 / 10) * 10, N / 2));
+  const ymax = Math.ceil((10 * Math.log10(Math.max(op.pin, 1e-3)) + 5) / 10) * 10, ymin = -80;
+  const box = { x: 42, y: 18, w: w - 52, h: h - 52 };
+  const { X, Y } = frame2(ctx, box, [-osaSpan, osaSpan], [ymin, ymax], { nx: 6, ny: 5, yl: 'dBm per line', xl: 'mode number μ (offset = μ × FSR)' });
+  ctx.lineWidth = Math.max(1, Math.min(2.5, box.w / (2 * osaSpan) * 0.6));
+  ctx.strokeStyle = CL.accent; ctx.beginPath();
+  for (let j = 0; j < N; j++) { const m = j - N / 2; if (m === 0 || Math.abs(m) > osaSpan) continue; const v = 10 * Math.log10(k4 * SP[j] + 1e-30); if (v <= ymin) continue; const xx = X(m); ctx.moveTo(xx, Y(ymin)); ctx.lineTo(xx, Y(Math.min(v, ymax))); }
+  ctx.stroke();
+  const pv = 10 * Math.log10(pumpOut + 1e-30); ctx.strokeStyle = CL.pump; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(0), Y(ymin)); ctx.lineTo(X(0), Y(Math.max(ymin, Math.min(ymax, pv)))); ctx.stroke();
+  if (dev.amxMHz !== 0 && Math.abs(dev.amxMu) <= osaSpan) { ctx.fillStyle = CL.faint; ctx.font = `11px ${CL.ui}`; ctx.textAlign = 'center'; ctx.fillText('crossing', X(dev.amxMu), box.y + 10); }
+  const hv = hover.osaC; if (hv && hv.x > box.x && hv.x < box.x + box.w) { const m = Math.round(-osaSpan + (hv.x - box.x) / box.w * 2 * osaSpan); const j = m + N / 2;
+    if (j >= 0 && j < N) { const v = m === 0 ? pv : 10 * Math.log10(k4 * SP[j] + 1e-30); crossV(ctx, X(m), box);
+      tip(ctx, hv.x, hv.y, ['μ = ' + m + (m === 0 ? ' (pump)' : ''), (m * dev.fsr / 1000 >= 0 ? '+' : '') + (m * dev.fsr / 1000).toFixed(2) + ' THz', (v > -200 ? v.toFixed(1) : '< −200') + ' dBm'], w, h); } }
+}
+let osaSpan = 60;
+function computeESA() {
+  const n = 512; if (tl.comb.c < 128) { esa = null; return; } const k = Math.min(n, tl.comb.c), x = tl.comb.last(k);
+  let mean = 0; for (const v of x) mean += v; mean /= k; if (mean < 1e-6) { esa = { none: true }; return; }
+  const re = new Float64Array(n), im = new Float64Array(n); let wsum = 0;
+  for (let i = 0; i < k; i++) { const wv = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (k - 1)); wsum += wv; re[i] = (x[i] / mean - 1) * wv; }
+  fftSmall(re, im); const dtS = Math.max(1, Math.round(0.25 / sim.dt)) * sim.dt * D.tUnit; // µs per sample
+  const fs = 1 / dtS, out = []; for (let i = 1; i < n / 2; i++) { const p = (re[i] * re[i] + im[i] * im[i]) / (wsum * wsum); out.push([i * fs / n, 10 * Math.log10(p + 1e-20)]); }
+  let varr = 0; for (const v of x) varr += (v / mean - 1) ** 2; varr /= k; esa = { pts: out, rin: 10 * Math.log10(varr + 1e-20) };
+}
+function drawESA() {
+  const { ctx, w, h } = canvasCtx($('esaC')); const box = { x: 42, y: 18, w: w - 52, h: h - 52 };
+  const fmax = esa && esa.pts ? esa.pts[esa.pts.length - 1][0] : 500;
+  const { X, Y } = frame2(ctx, box, [0, fmax], [-140, 0], { nx: 5, ny: 4, yl: 'dB relative to mean', xl: 'frequency (MHz)' });
+  if (!esa || esa.none) { ctx.fillStyle = CL.muted; ctx.font = `13px ${CL.ui}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(esa && esa.none ? 'No comb light on the photodiode' : 'Collecting samples…', box.x + box.w / 2, box.y + box.h / 2); return; }
+  ctx.beginPath(); esa.pts.forEach(([f, v], i) => { const yy = Y(Math.max(-140, Math.min(0, v))); i ? ctx.lineTo(X(f), yy) : ctx.moveTo(X(f), yy); }); ctx.strokeStyle = CL.pump; ctx.lineWidth = 1.4; ctx.stroke();
+  const hv = hover.esaC; if (hv && hv.x > box.x && hv.x < box.x + box.w) { const f = (hv.x - box.x) / box.w * fmax; let best = esa.pts[0]; for (const p of esa.pts) if (Math.abs(p[0] - f) < Math.abs(best[0] - f)) best = p;
+    crossV(ctx, X(best[0]), box); tip(ctx, hv.x, hv.y, [best[0].toFixed(1) + ' MHz', best[1].toFixed(1) + ' dB'], w, h); }
+}
+function cwT(z, branch) { const r = sim.cwRoots(z); if (branch === 'lower' && r.length < 3 && z < 2) return null; const rho = branch === 'upper' ? r[r.length - 1] : r[0];
+  if (branch === 'upper' && r.length < 3 && z > 2 && rho < 1.0) return null; const d = 1 + (z - rho) ** 2, a = 2 * dev.eta / d, re = 1 - a, im = a * (z - rho); return re * re + im * im; }
+function drawScope() {
+  const { ctx, w, h } = canvasCtx($('scopeC')); const gap = 24, h1 = (h - 18 - 34 - gap) / 2;
+  const b1 = { x: 46, y: 18, w: w - 56, h: h1 }, b2 = { x: 46, y: 18 + h1 + gap, w: w - 56, h: h1 };
+  let xs, Ts, Cs, xr, xl, fx;
+  if (run.scope === 'sweep') {
+    xs = trace.map(p => p[0] * D.halfK); Ts = trace.map(p => p[1]); Cs = trace.map(p => p[2]);
+    let lo = ZSTART * D.halfK, hi = Math.max(op.setZeta, op.zetaLaser, 1) * D.halfK; for (const v of xs) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    xr = [lo, hi + (hi - lo) * 0.02]; xl = 'laser detuning f_res − f_laser (MHz)'; fx = v => v.toFixed(0);
+  } else {
+    const k = Math.min(1600, tl.t.c), tt = tl.t.last(k); xs = Array.from(tt, v => (v - (tt[k - 1] || 0)) * D.tUnit); Ts = Array.from(tl.T.last(k)); Cs = Array.from(tl.comb.last(k));
+    xr = [Math.min(-0.01, xs[0] || -1), 0]; xl = 'time (µs, 0 = now)'; fx = v => v.toFixed(2);
+  }
+  let cmax = 0.05; for (const v of Cs) cmax = Math.max(cmax, v); cmax *= 1.15; let tmax = 1.05; for (const v of Ts) tmax = Math.max(tmax, v);
+  const A = frame2(ctx, b1, xr, [0, tmax], { nx: 7, ny: 2, noXTicks: true, fx, fy: v => v.toFixed(1), yl: 'transmitted pump (fraction of input)' });
+  if (run.scope === 'sweep' && !op.thermal) { ctx.setLineDash([4, 3]); ctx.strokeStyle = CL.faint; ctx.lineWidth = 1;
+    for (const br of ['upper', 'lower']) { ctx.beginPath(); let on = false; for (let q = 0; q <= 300; q++) { const xv = xr[0] + (xr[1] - xr[0]) * q / 300, t = cwT(xv / D.halfK, br); if (t === null) { on = false; continue; } const yy = A.Y(t); on ? ctx.lineTo(A.X(xv), yy) : ctx.moveTo(A.X(xv), yy); on = true; } ctx.stroke(); }
+    ctx.setLineDash([]); }
+  const line = (Ax, vals, col) => { ctx.beginPath(); for (let i = 0; i < xs.length; i++) { const xx = Ax.X(xs[i]), yy = Ax.Y(vals[i]); i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.stroke(); };
+  line(A, Ts, CL.accent);
+  const B = frame2(ctx, b2, xr, [0, cmax], { nx: 7, ny: 2, fx, fy: v => v < 1 ? v.toFixed(2) : v.toFixed(1), yl: 'comb power after notch (mW)', xl });
+  line(B, Cs, CL.pump);
+  if (run.scope === 'sweep') { const xx = A.X(op.zetaLaser * D.halfK); ctx.fillStyle = CL.ink; ctx.beginPath(); ctx.arc(xx, A.Y(last ? last.T : 0), 3.5, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(xx, B.Y(last ? 4 * dev.eta ** 2 * D.Pth * last.combNorm : 0), 3.5, 0, 7); ctx.fill();
+    const sx = A.X(op.setZeta * D.halfK); ctx.strokeStyle = CL.muted; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(sx, b1.y); ctx.lineTo(sx, b2.y + b2.h); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = CL.muted; ctx.font = `11px ${CL.ui}`; ctx.textAlign = sx > b1.x + b1.w - 60 ? 'right' : 'left'; ctx.textBaseline = 'top'; ctx.fillText(' set point ', sx, b1.y + 2); }
+  if (!xs.length) { ctx.fillStyle = CL.muted; ctx.font = `13px ${CL.ui}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Press “Sweep in from blue” to record a scope trace', b1.x + b1.w / 2, b1.y + b1.h / 2); }
+  const hv = hover.scopeC; if (hv && xs.length && hv.x > b1.x && hv.x < b1.x + b1.w) { const xv = xr[0] + (hv.x - b1.x) / b1.w * (xr[1] - xr[0]);
+    let bi = 0, bd = Infinity; for (let i = 0; i < xs.length; i++) { const d = Math.abs(xs[i] - xv); if (d < bd || (d === bd)) { bd = d; bi = i; } }
+    crossV(ctx, A.X(xs[bi]), { y: b1.y, h: b2.y + b2.h - b1.y });
+    tip(ctx, hv.x, hv.y, [(run.scope === 'sweep' ? xs[bi].toFixed(0) + ' MHz' : xs[bi].toFixed(3) + ' µs'), 'T = ' + Ts[bi].toFixed(3), 'comb = ' + Cs[bi].toFixed(3) + ' mW'], w, h); }
+}
+let mapBox = null, mapRanges = null;
+function f2rho(rho, z) { return rho * (1 + (z - rho) ** 2); }
+function drawMap() {
+  const { ctx, w, h } = canvasCtx($('mapC')); const box = { x: 46, y: 18, w: w - 58, h: h - 52 };
+  const zeff = sim.zetaEff(), zr = [-5, Math.max(12, 1.35 * D.zlim, op.setZeta + 1, op.zetaLaser + 1, zeff + 1)], fr = [0, Math.max(10, 1.6 * D.f2)];
+  mapBox = box; mapRanges = { zr, fr };
+  const Xz = z => box.x + (z - zr[0]) / (zr[1] - zr[0]) * box.w, Yf = f => box.y + box.h - (f - fr[0]) / (fr[1] - fr[0]) * box.h;
+  // soliton region: zeta > sqrt3, 8 zeta/pi^2 < f2 < f2(rho_-)
+  ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
+  ctx.fillStyle = CL.tintSol; ctx.beginPath(); const Z0 = Math.sqrt(3) + 0.001, pts = [];
+  for (let q = 0; q <= 200; q++) { const z = Z0 + (zr[1] - Z0) * q / 200, rm = (2 * z - Math.sqrt(z * z - 3)) / 3; pts.push([z, Math.min(fr[1] * 2, f2rho(rm, z))]); }
+  ctx.moveTo(Xz(pts[0][0]), Yf(Math.max(8 * pts[0][0] / Math.PI ** 2, 0))); for (const [z, ft] of pts) ctx.lineTo(Xz(z), Yf(Math.max(ft, 8 * z / Math.PI ** 2)));
+  for (let q = 200; q >= 0; q--) { const z = pts[q][0]; ctx.lineTo(Xz(z), Yf(8 * z / Math.PI ** 2)); } ctx.closePath(); ctx.fill();
+  // MI region above rho = 1 curve (zeta < 2)
+  ctx.fillStyle = CL.tintMi; ctx.beginPath(); ctx.moveTo(Xz(zr[0]), Yf(fr[1])); for (let q = 0; q <= 100; q++) { const z = zr[0] + (2 - zr[0]) * q / 100; ctx.lineTo(Xz(z), Yf(1 + (z - 1) ** 2)); } ctx.lineTo(Xz(2), Yf(fr[1])); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  const A = frame2(ctx, box, zr, fr, { nx: 6, ny: 4, fx: z => (z * D.halfK).toFixed(0), fy: f => (f * D.Pth >= 100 ? (f * D.Pth).toFixed(0) : (f * D.Pth).toFixed(1)), yl: 'pump on chip (mW)', xl: 'effective detuning (MHz)' });
+  ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
+  ctx.lineWidth = 1.3; ctx.strokeStyle = CL.r.roll; ctx.beginPath(); for (let q = 0; q <= 100; q++) { const z = zr[0] + (2 - zr[0]) * q / 100; const yy = Yf(1 + (z - 1) ** 2); q ? ctx.lineTo(Xz(z), yy) : ctx.moveTo(Xz(z), yy); } ctx.stroke();
+  ctx.strokeStyle = CL.r.sol; ctx.beginPath(); ctx.moveTo(Xz(0), Yf(0)); ctx.lineTo(Xz(zr[1]), Yf(8 * zr[1] / Math.PI ** 2)); ctx.stroke();
+  ctx.setLineDash([4, 3]); ctx.strokeStyle = CL.faint; for (const sgn2 of [-1, 1]) { ctx.beginPath(); for (let q = 0; q <= 200; q++) { const z = Z0 + (zr[1] - Z0) * q / 200, r = (2 * z + sgn2 * Math.sqrt(z * z - 3)) / 3, yy = Yf(f2rho(r, z)); q ? ctx.lineTo(Xz(z), yy) : ctx.moveTo(Xz(z), yy); } ctx.stroke(); } ctx.setLineDash([]);
+  ctx.restore();
+  ctx.font = `11.5px ${CL.ui}`; ctx.textBaseline = 'middle';
+  const zLab = 1 - Math.sqrt(Math.max(0, 0.82 * fr[1] - 1)); ctx.fillStyle = CL.r.roll; ctx.textAlign = 'left'; ctx.fillText('comb threshold (ρ = 1)', Xz(Math.max(zr[0], zLab)) + 8, Yf(0.82 * fr[1]));
+  const zl = zr[1] * 0.97; ctx.fillStyle = CL.r.sol; ctx.textAlign = 'right'; ctx.fillText('solitons can exist (ζ₀ < π²f²/8)', Xz(zl), Math.max(box.y + 12, Yf(8 * zl / Math.PI ** 2) - 12));
+  ctx.fillStyle = CL.faint; ctx.textAlign = 'right'; ctx.fillText('dashed: edges of the bistable CW range', box.x + box.w - 6, box.y + box.h - 12);
+    // markers
+  const yy = Yf(D.f2); ctx.strokeStyle = CL.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(Xz(op.zetaLaser), yy, 6, 0, 7); ctx.stroke();
+  ctx.fillStyle = regime.color || CL.ink; ctx.beginPath(); ctx.arc(Xz(zeff), yy, 5, 0, 7); ctx.fill(); ctx.strokeStyle = CL.panel; ctx.lineWidth = 2; ctx.stroke();
+  const sx = Xz(op.setZeta); ctx.strokeStyle = CL.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx - 5, yy - 9); ctx.lineTo(sx, yy - 4); ctx.lineTo(sx + 5, yy - 9); ctx.stroke();
+  const hv = hover.mapC; if (hv && hv.x > box.x && hv.x < box.x + box.w && hv.y > box.y && hv.y < box.y + box.h) {
+    const z = zr[0] + (hv.x - box.x) / box.w * (zr[1] - zr[0]), f = fr[0] + (box.y + box.h - hv.y) / box.h * (fr[1] - fr[0]);
+    tip(ctx, hv.x, hv.y, ['detuning ' + (z * D.halfK).toFixed(0) + ' MHz', 'pump ' + fmtP(f * D.Pth) + ' (f² ' + f.toFixed(1) + ')', 'click to go here'], w, h); }
+}
+$('mapC').addEventListener('click', e => { if (!mapBox) return; const r = $('mapC').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, b = mapBox;
+  if (x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) return;
+  const z = mapRanges.zr[0] + (x - b.x) / b.w * (mapRanges.zr[1] - mapRanges.zr[0]), f = Math.max(0.05, mapRanges.fr[0] + (b.y + b.h - y) / b.h * (mapRanges.fr[1] - mapRanges.fr[0]));
+  op.setZeta = z; op.pin = f * D.Pth; applyParams(); syncInputs(); });
+
+// ======================= regime classification =======================
+let regime = { key: 'cw', short: 'CW', color: '' };
+const DESC = {
+  cwBlue: ['Uniform field (CW)', 'No comb. Parametric gain is below loss, so no sideband pair can grow.', 'cw', 'CW'],
+  cwRed: ['Uniform field, red side', 'The pump sits off-resonance on the low-power branch. No pulse is present to sustain a comb.', 'cw', 'CW'],
+  rolls: ['Primary comb (Turing rolls)', 'A stationary ripple with {n} peaks around the ring: comb lines {n} FSRs apart, phase-locked and quiet.', 'roll', '{n} rolls'],
+  chaos: ['Chaotic MI comb', 'Pulses form, collide and die. The spectrum is broad but every line is noisy.', 'chaos', 'chaos'],
+  breather: ['Breathing soliton', 'The soliton peak oscillates periodically, which puts a sharp tone in the intensity noise.', 'breath', 'breather'],
+  single: ['Single soliton', 'One pulse on a quiet background: a smooth sech² comb at single-FSR spacing, noise at the floor.', 'sol', '1 soliton'],
+  multi: ['{n} solitons', '{n} pulses on a quiet background. Their spacing puts fringes on the comb envelope.', 'multi', '{n} solitons'],
+  cryst: ['Soliton crystal ({n})', '{n} evenly spaced solitons: comb lines {n} FSRs apart with a smooth envelope.', 'cryst', 'crystal'],
+  settle: ['Settling', 'The field is relaxing after a change.', 'cw', '…'],
+};
+function classify() {
+  const N = sim.N; sim.intensity(I); let mx = 0, mn = Infinity, sum = 0; for (let j = 0; j < N; j++) { const v = I[j]; mx = Math.max(mx, v); mn = Math.min(mn, v); sum += v; }
+  const mean = sum / N, contrast = (mx - mn) / Math.max(mean, 1e-9), z = sim.zetaEff();
+  const k = Math.min(160, tl.pint.c), ps = tl.pint.last(k), pk = tl.peak.last(k); let m1 = 0, m2 = 0; for (const v of ps) m1 += v; m1 /= k; for (let i = 1; i < k; i++) m2 += (ps[i] - ps[i - 1]) ** 2; const relVar = Math.sqrt(m2 / Math.max(1, k - 1)) / Math.max(m1, 1e-9);
+  const roots = sim.cwRoots(z), rhoL = roots[0];
+  const sorted = I.slice(0, N).sort(), med = sorted[Math.floor(N * 0.5)];
+  const localized = z > 1.4 && rhoL < 1.05 && Math.abs(med - rhoL) < 0.35 * rhoL + 0.03;
+  // peaks
+  const thr = mn + 0.5 * (mx - mn), peaks = []; for (let j = 0; j < N; j++) { const a = I[(j - 1 + N) % N], b = I[j], c = I[(j + 1) % N]; if (b > thr && b > a && b >= c) peaks.push(j); }
+  const np = peaks.length;
+  let key = 'cwBlue';
+  if (sim.t < run.settleUntil && (relVar > 0.0025 || contrast > 0.02)) key = 'settle';
+  else if (contrast < 0.03) key = (z > 1.8 && roots.length === 3) || (z > 2 && rhoL < 1) ? 'cwRed' : 'cwBlue';
+  else if (relVar > 0.0025) {
+    let periodic = false; if (localized && k > 60) { let a0 = 0, mp = 0; for (const v of pk) mp += v; mp /= k; for (const v of pk) a0 += (v - mp) ** 2;
+      let best = 0; for (let lag = 4; lag < k / 2; lag++) { let s = 0; for (let i = 0; i + lag < k; i++) s += (pk[i] - mp) * (pk[i + lag] - mp); best = Math.max(best, s / a0 * k / (k - lag)); } periodic = best > 0.75 && np <= 8; }
+    key = periodic ? 'breather' : 'chaos';
+  } else if (!localized) key = np >= 1 ? 'rolls' : 'cwBlue';
+  else if (np === 1) key = 'single';
+  else { const sp = peaks.map((p, i) => ((peaks[(i + 1) % np] - p + N) % N) || N); const ms = sp.reduce((a, b) => a + b, 0) / np, cv = Math.sqrt(sp.reduce((a, b) => a + (b - ms) ** 2, 0) / np) / ms; key = (np >= 4 && cv < 0.04) ? 'cryst' : 'multi'; }
+  const d = DESC[key], fill = s => s.replaceAll('{n}', np);
+  regime = { key, short: fill(d[3]), color: CL.r[d[2]], name: fill(d[0]), desc: fill(d[1]), cvar: '--r-' + d[2] };
+}
+function updateStatus() {
+  $('regName').textContent = regime.name; $('regDesc').textContent = regime.desc; $('chip').style.setProperty('--chip', `var(${regime.cvar})`);
+  $('mF2').innerHTML = `${D.f2.toFixed(1)} <span class="u">(${fmtP(op.pin)})</span>`;
+  $('mDet').innerHTML = `${detLabel(op.zetaLaser)} <span class="u">ζ ${op.zetaLaser.toFixed(2)}</span>`;
+  const ze = sim.zetaEff(); $('mDetEff').innerHTML = `${detLabel(ze)} <span class="u">${ze > D.zlim ? 'past limit' : 'limit ' + fmtMHz(D.zlim * D.halfK)}</span>`;
+  const cm = last ? 4 * dev.eta ** 2 * D.Pth * last.combNorm : 0; $('mComb').innerHTML = `${cm < 0.01 ? cm.toExponential(1) : cm < 10 ? cm.toFixed(2) : cm.toFixed(1)} <span class="u">mW</span>`;
+  $('mT').textContent = last ? (100 * last.T).toFixed(1) + ' %' : '–';
+  $('mRIN').innerHTML = esa && esa.rin !== undefined ? `${esa.rin.toFixed(0)} <span class="u">dB rms</span>` : '<span class="u">no comb</span>';
+  $('simInfo').innerHTML = `<span>Modes simulated</span><b>${sim.N}${run.resLimited ? ' (too few for this D₂/κ)' : ''}</b><span>Time step</span><b>${(sim.dt || 0).toFixed(4)} × 2/κ</b><span>Simulated time</span><b>${(sim.t * D.tUnit).toFixed(2)} µs</b>`;
+}
+
+function loop() {
+  frameNo++;
+  if (!run.paused) simulate();
+  if (frameNo % 6 === 1) classify();
+  drawRing(); drawField(); drawST(); drawOSA();
+  if (frameNo % 8 === 1) computeESA();
+  drawESA(); drawScope(); drawMap();
+  if (frameNo % 6 === 1) updateStatus();
+  requestAnimationFrame(loop);
+}
+
+// ======================= boot =======================
+readColors();
+syncInputs(); applyParams(); syncInputs();
+preset('sweep');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
